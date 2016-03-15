@@ -146,8 +146,7 @@ LoaderMesh.prototype.close = function () {
 };
 
 LoaderMesh.prototype._updateMeshPosition = function (header) {
-	//this.position.set(header.offsetX,header.offsetY,header.offsetZ);
-        this.position.copy(new THREE.Vector3(4627770 , 112407 , 4372970 ));
+	this.position.set(header.offsetX,header.offsetY,header.offsetZ);
 };
 
 LoaderMesh.prototype._reset = function () {
@@ -226,7 +225,8 @@ LoaderMesh.prototype._createMaterialForEachPatch = function(){
         var materials = []; 
         for(var i =0; i < this._header.patchesCount; i++){
                 var color = new THREE.Color().setHex( Math.random() * 0xffffff );
-                materials.push(new THREE.MeshBasicMaterial({color: color, wireframe: that._wireframe, side: THREE.DoubleSide,  transparent : true}));//, ,depthTest : true, depthWrite : false, side: THREE.DoubleSide, transparent : false, opacity :0.5
+                materials.push(new THREE.MeshBasicMaterial({color: 0xffcc33, wireframe: that._wireframe, side: THREE.DoubleSide,  transparent : true}));//, ,depthTest : true, depthWrite : false, side: THREE.DoubleSide, transparent : false, opacity :0.5
+                //materials.push( new THREE.MeshLambertMaterial( { color: color, wireframe: that._wireframe, shading: THREE.FlatShading, side: THREE.DoubleSide,  transparent : true } ));//, ,depthTest : true, depthWrite : false, side: THREE.DoubleSide, transparent : false, opacity :0.5
         }
         this._materials = new THREE.MultiMaterial(materials);
 };
@@ -426,7 +426,7 @@ LoaderMesh.prototype._updateCache = function () {
 			node.request = null;
                         /*
                         var material = new THREE.MeshBasicMaterial({color: 0xff0000});
-                        var sgeometry = new THREE.SphereGeometry(20);
+                        var sgeometry = new THREE.SphereGeometry(200);
                         var sphere = new THREE.Mesh(sgeometry, material);
                         sphere.position.copy(node.sphere.center);
                         sphere.matrixWorld.multiplyMatrices( this.matrixWorld, sphere.matrix );
@@ -463,7 +463,7 @@ LoaderMesh.prototype._hierarchyVisit_nodeError = function (n) {
 		var node   = this._nodes.items[n];
 		var sphere = node.sphere;
                 //constant must be replaced by offset
-		var aWGS84 = new THREE.Vector3().addVectors(sphere.center,new THREE.Vector3(4627770,112407,4372970));
+		var aWGS84 = new THREE.Vector3().addVectors(sphere.center, this.position);
                     //aWGS84.multiply(new THREE.Vector3(-1,1,1));
                 var a = new THREE.Vector3(-aWGS84.x, aWGS84.z, aWGS84.y);
                 //Rotate to local referentiel

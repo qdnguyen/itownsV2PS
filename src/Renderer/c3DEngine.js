@@ -76,7 +76,13 @@ define('Renderer/c3DEngine', [
         this.pickingTexture.texture.type = THREE.FloatType;
         this.pickingTexture.depthBuffer = true;
 
-        this.motreeProvider = new MotreeProvider({scene : this.scene3D});
+        this.motreeProvider = new MotreeProvider({
+                                                    scene : this.scene3D,
+                                                    url : "resources/b3d/",
+                                                    lon : 651471.19,
+                                                    lat : 6861160.59,
+                                                    size: 10
+                                                });
 
         this.renderScene = function() {
 
