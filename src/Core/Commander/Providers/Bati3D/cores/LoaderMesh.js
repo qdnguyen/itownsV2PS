@@ -4,14 +4,34 @@ define([
     './State', 
     './Header', 
     './Node', 
-    './NodeIndex' , './Patch', './PatchIndex', './Texture', './TextureIndex', './Signature', './PriorityQueue' ,'./saywho','./defaultValue'],
+    './NodeIndex' , 
+    './Patch', 
+    './PatchIndex', 
+    './Texture', 
+    './TextureIndex', 
+    './Signature', 
+    './PriorityQueue',
+    './saywho',
+    './defaultValue',
+    './B3DMaterial'
+],
 function(
         $, 
         THREE, 
         State, 
         Header, 
         Node, 
-        NodeIndex, Patch, PatchIndex, Texture, TextureIndex, Signature, PriorityQueue, sayswho, defaultValue){
+        NodeIndex, 
+        Patch, 
+        PatchIndex, 
+        Texture, 
+        TextureIndex, 
+        Signature, 
+        PriorityQueue, 
+        sayswho, 
+        defaultValue,
+        B3DMaterial        
+        ){
     
 var Debug = {
 	nodes: true,    //color each node
@@ -40,26 +60,27 @@ var LoaderMesh = function (options) {
             throw new Error('options.url is required'); 
     
 	THREE.Object3D.call( this );
+        this._reset();
         
-        this._url                = defaultValue(options.url, '');
-	this._targetError        = defaultValue(options.targetError,State.DEFAULT_TARGET_ERROR);
-	this._targetFps          = defaultValue(options.targetFps, State.DEFAULT_TARGET_FPS);
+        this._url     = defaultValue(options.url, '');
+	this._targetError     = defaultValue(options.targetError,State.DEFAULT_TARGET_ERROR);
+	this._targetFps    = defaultValue(options.targetFps, State.DEFAULT_TARGET_FPS);
 	this._maxPendingRequests = defaultValue(options.maxPendingRequests,State.DEFAULT_MAX_PENDING_REQUESTS);
-	this._maxCacheSize       = defaultValue(options.maxCacheSize, State.DEFAULT_CACHE_SIZE);
-	this.drawBudget          = defaultValue(options.drawBudget,State.DEFAULT_DRAW_BUDGET);
-	this._minDrawBudget      = this.drawBudget / 4;
-        this._onUpdate           = defaultValue(options.onUpdate,null);
+	this._maxCacheSize     = defaultValue(options.maxCacheSize, State.DEFAULT_CACHE_SIZE);
+	this.drawBudget        = defaultValue(options.drawBudget,State.DEFAULT_DRAW_BUDGET);
+	this._minDrawBudget    = this.drawBudget / 4;
+        this._onUpdate     = defaultValue(options.onUpdate,null);
 	this._onSceneReady       = defaultValue(options.onSceneReady,null);
-        this._wireframe          = defaultValue(options.wireframe,false);
-        
+        this._color          = defaultValue(options.color,0xffcc33);
+        this._wireframe   = defaultValue(options.wireframe,false);
+        this._wgs84       = defaultValue(options.wgs84,false);
+                
         this._frustum = new THREE.Frustum();
 	this._viewPoint   = new THREE.Vector3();
         this._materials = null;
         this._offset    = new THREE.Vector3();
         this.LITTLE_ENDIAN_DATA = State.LITTLE_ENDIAN_DATA;
         this.PADDING            = State.PADDING; 
-        
-       	this._reset();
         
        	this._open(options.url);
 };
@@ -176,6 +197,7 @@ LoaderMesh.prototype._reset = function () {
 	this._pendingRequests = 0;
 	this._candidateNodes  = null;
 	this._redrawOnNewNodes = true;
+        this._color         = 0xffcc33;
 
 	var that = this;
                 
@@ -217,19 +239,39 @@ LoaderMesh.prototype._handleHeader = function (buffer) {
 	this._header = header;
         this._createMaterialForEachPatch();
         this._updateMeshPosition(this._header);
+        
 };
 
 
 LoaderMesh.prototype._createMaterialForEachPatch = function(){
         var that = this;
         var materials = []; 
+        
         for(var i =0; i < this._header.patchesCount; i++){
-                var color = new THREE.Color().setHex( Math.random() * 0xffffff );
-                materials.push(new THREE.MeshBasicMaterial({color: 0xffcc33, wireframe: that._wireframe, side: THREE.DoubleSide,  transparent : true}));//, ,depthTest : true, depthWrite : false, side: THREE.DoubleSide, transparent : false, opacity :0.5
-                //materials.push( new THREE.MeshLambertMaterial( { color: color, wireframe: that._wireframe, shading: THREE.FlatShading, side: THREE.DoubleSide,  transparent : true } ));//, ,depthTest : true, depthWrite : false, side: THREE.DoubleSide, transparent : false, opacity :0.5
+                var material = new THREE.MeshPhongMaterial( { color: that._color, specular: 0x009900, shininess: 20, 
+                                shading: THREE.FlatShading, wireframe : that._wireframe, opacity: 0.8, transparent: true });
+                //var material = new THREE.MeshLambertMaterial( { color: 0xffbb00, opacity: 0.5, transparent: true } );
+                material.wireframe = that._wireframe;
+                materials.push(material);
         }
+        
         this._materials = new THREE.MultiMaterial(materials);
 };
+
+LoaderMesh.prototype._createShaderMaterialForEachPatch = function(){
+        var that = this;
+        var materials = []; 
+        var x = this._header.OffsetX, 
+            y = this._header.OffsetY, 
+            z = this._header.OffsetZ;
+        for(var i =0; i < this._header.patchesCount; i++){
+                var material = new B3DMaterial();
+                material.wireframe = that._wireframe;
+                material.uniforms.lightPosition.value.set(-x,y,z);
+                materials.push(material);
+        }
+        this._materials = new THREE.MultiMaterial(materials);
+}
 
 LoaderMesh.prototype._requestIndex = function () {
         var header = this._header;
@@ -307,7 +349,9 @@ LoaderMesh.prototype._open = function (url) {
 	this._url    = url;
 	this._requestHeader();
 };
-                
+
+
+
 LoaderMesh.prototype._updateCache = function () {
                 var that = this;
 		var readyNodes = this._readyNodes;
@@ -400,7 +444,7 @@ LoaderMesh.prototype._updateCache = function () {
 					node.buffer = ctmDecode(sig, _node, p);
 				}
 			}
-
+                        /*
 			var nv = node.verticesCount;
 			var nf = node.facesCount;
 
@@ -421,7 +465,52 @@ LoaderMesh.prototype._updateCache = function () {
                         node.vbo.name = node.index;
                         node.vbo.geometry.boundingSphere  = new THREE.Sphere(node.sphere.center,node.sphere.radius);
                         node.vbo.matrixWorld.multiplyMatrices( this.matrixWorld, node.vbo.matrix );
-                        //node.vbo.frustumCulled = false;
+                        
+                        //TODO: add option castShadow to provider
+                        node.vbo.castShadow = true;
+                        node.vbo.receiveShadow = true;
+                        //add offset to shader
+                        */
+                       
+                        //======
+                        var nv = node.verticesCount;
+                        var nf = node.facesCount;
+                        var size = node.verticesCount*12; //float
+                        var vertices = new Float32Array(node.buffer, 0, nv*3);
+                        var normals, colors, faces;
+                        if(this._header.signature.vertex.hasNormal()) {
+                                var normalsInt16 = new Int16Array(node.buffer, size, nv*3);
+                                normals = new Float32Array(normalsInt16.buffer);
+                                size += nv*6; //short
+                        }
+                        if(this._header.signature.vertex.hasColor()) {
+                                colors = new Uint8ClampedArray(node.buffer, size, nv*4);
+                                size += nv*4; //chars
+                        }
+                        if(this._header.signature.face.hasIndex()) {
+                                faces = new Uint16Array(node.buffer, size, nf * 3);
+                                size += nf*6; //short
+                        }
+                        
+                        var geometry  = new THREE.BufferGeometry();
+ 			geometry.addAttribute( 'position', new THREE.BufferAttribute( vertices, 3 )); //.setDynamic( true )
+			if (this._header.signature.face.hasIndex())
+                                geometry.setIndex(new THREE.BufferAttribute( faces, 1)); 
+                        if(this._header.signature.vertex.hasNormal())
+                                geometry.addAttribute( 'normal', new THREE.BufferAttribute( normals, 3 )); //.setDynamic( true )
+                        
+                        node.vbo = new THREE.Mesh(geometry, this._materials);
+                        node.vbo.name = node.index;
+                        node.vbo.geometry.boundingSphere  = new THREE.Sphere(node.sphere.center,node.sphere.radius);
+                        node.vbo.matrixWorld.multiplyMatrices( this.matrixWorld, node.vbo.matrix );
+                        
+                        //TODO: add option castShadow to provider
+                        //node.vbo.castShadow = true;
+                        //node.vbo.receiveShadow = true;
+                        
+                        //======
+                       
+                       
                         this.add(node.vbo);
 			node.request = null;
                         /*
@@ -777,7 +866,7 @@ LoaderMesh.prototype._requestNodes = function () {
 		}
 		this._candidateNodes = [];
 };
-/*
+
 LoaderMesh.prototype._updateView = function (camera, renderer) {
         	
                 camera.updateMatrixWorld();
@@ -799,9 +888,9 @@ LoaderMesh.prototype._updateView = function (camera, renderer) {
                 var fov = camera.fov / 2 * Math.PI / 180.0;
 		this._resoltion = 0.5*Math.tan(fov)*renderer.domElement.clientHeight;
 };
-*/
 
-LoaderMesh.prototype._updateView = function (camera, renderer) {
+
+LoaderMesh.prototype._updateViewItowns = function (camera, renderer) {
         	
                 camera.updateMatrixWorld();
         	var viewI = camera.matrixWorldInverse;
@@ -827,7 +916,11 @@ LoaderMesh.prototype.update = function(camera, renderer){
                 if (!this.isOpen()) return;
 		if (this._header.nodesCount <= 0) return;
 
-                this._updateView(camera, renderer);
+                if(this._wgs84) 
+                    this._updateView(camera, renderer);
+                else 
+                    this._updateViewItowns(camera, renderer);
+                    
 		this._updateCache();
 		this._hierarchyVisit();
 		this._requestNodes();

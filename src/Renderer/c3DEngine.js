@@ -78,10 +78,10 @@ define('Renderer/c3DEngine', [
 
         this.motreeProvider = new MotreeProvider({
                                                     scene : this.scene3D,
-                                                    url : "resources/b3d/",
+                                                    url : "resources/Bati3D_withmipmap/",
                                                     lon : 651471.19,
                                                     lat : 6861160.59,
-                                                    size: 10
+                                                    size: 10 
                                                 });
 
         this.renderScene = function() {
