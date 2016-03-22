@@ -353,13 +353,10 @@ LoaderMesh.prototype._open = function (url) {
 
 
 LoaderMesh.prototype._updateCache = function () {
-                var that = this;
 		var readyNodes = this._readyNodes;
 		if (readyNodes.length <= 0) return;
 
 		var cachedNodes = this._cachedNodes;
-
-		//console.log('upateCache', readyNodes);
 
 		var newCache = cachedNodes.concat(readyNodes);
 		newCache.sort(sortNodeCacheFunction);
@@ -402,14 +399,8 @@ LoaderMesh.prototype._updateCache = function () {
 			newCache = newCache.slice(0, firstVictim);
 		}
 
-		var vertexStride = this._header.signature.vertex.getByteLength();
-		var faceStride   = this._header.signature.face.getByteLength();
-		//var littleEndian = State.LITTLE_ENDIAN_DATA;
-		//var gl           = this._gl;
-
 		for (var i = 0, n = newNodes.length; i < n; ++i) {
 			var node    = newNodes[i];
-			//console.log("loading node: " + node.index);
 			var compressed = Signature.MECO + Signature.CTM1 + Signature.CTM2;
 
 			if(Debug.worker && this._header.signature.flags & compressed) {
@@ -444,35 +435,7 @@ LoaderMesh.prototype._updateCache = function () {
 					node.buffer = ctmDecode(sig, _node, p);
 				}
 			}
-                        /*
-			var nv = node.verticesCount;
-			var nf = node.facesCount;
-
-			var vertexOffset = 0;
-			var vertexSize   = nv * vertexStride;
-			var faceOffset   = vertexOffset + vertexSize;
-			var faceSize     = nf * faceStride;
-
-			var vertices = new Uint8Array(node.buffer, vertexOffset, vertexSize);
-			var indices  = new Uint8Array(node.buffer, faceOffset,   faceSize);
-
-			//node.vbo = new SglVertexBuffer (gl, {data : vertices});
-                        var geometry  = new THREE.BufferGeometry();
- 			geometry.addAttribute( 'position', new THREE.BufferAttribute( vertices, 3 )); //.setDynamic( true )
-			if (this._header.signature.face.hasIndex())
-                                geometry.setIndex(new THREE.BufferAttribute( indices, 1));    
-                        node.vbo = new THREE.Mesh(geometry, this._materials);
-                        node.vbo.name = node.index;
-                        node.vbo.geometry.boundingSphere  = new THREE.Sphere(node.sphere.center,node.sphere.radius);
-                        node.vbo.matrixWorld.multiplyMatrices( this.matrixWorld, node.vbo.matrix );
                         
-                        //TODO: add option castShadow to provider
-                        node.vbo.castShadow = true;
-                        node.vbo.receiveShadow = true;
-                        //add offset to shader
-                        */
-                       
-                        //======
                         var nv = node.verticesCount;
                         var nf = node.facesCount;
                         var size = node.verticesCount*12; //float
@@ -513,14 +476,7 @@ LoaderMesh.prototype._updateCache = function () {
                        
                         this.add(node.vbo);
 			node.request = null;
-                        /*
-                        var material = new THREE.MeshBasicMaterial({color: 0xff0000});
-                        var sgeometry = new THREE.SphereGeometry(200);
-                        var sphere = new THREE.Mesh(sgeometry, material);
-                        sphere.position.copy(node.sphere.center);
-                        sphere.matrixWorld.multiplyMatrices( this.matrixWorld, sphere.matrix );
-                        this.add(sphere);
-                        */
+
 			//STEP 1: if textures not ready this will be delayed
 			var isReady = true;	
 			//var patches      = this._patches.items;
