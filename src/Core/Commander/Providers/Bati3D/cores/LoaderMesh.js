@@ -74,6 +74,7 @@ var LoaderMesh = function (options) {
         this._color          = defaultValue(options.color,0xffcc33);
         this._wireframe   = defaultValue(options.wireframe,false);
         this._wgs84       = defaultValue(options.wgs84,false);
+        this._lightPos    = defaultValue(options.lightPos, new THREE.Vector3(1,1,1));
                 
         this._frustum = new THREE.Frustum();
 	this._viewPoint   = new THREE.Vector3();
@@ -238,6 +239,7 @@ LoaderMesh.prototype._handleHeader = function (buffer) {
 	header.import(view, offset, littleEndian);
 	this._header = header;
         this._createMaterialForEachPatch();
+        //this._createShaderMaterialForEachPatch();
         this._updateMeshPosition(this._header);
         
 };
@@ -249,7 +251,7 @@ LoaderMesh.prototype._createMaterialForEachPatch = function(){
         
         for(var i =0; i < this._header.patchesCount; i++){
                 var material = new THREE.MeshPhongMaterial( { color: that._color, specular: 0x009900, shininess: 20, 
-                                shading: THREE.FlatShading, wireframe : that._wireframe, opacity: 0.8, transparent: true });
+                                shading: THREE.FlatShading, wireframe : that._wireframe, opacity: 0.8, transparent: true});
                 //var material = new THREE.MeshLambertMaterial( { color: 0xffbb00, opacity: 0.5, transparent: true } );
                 material.wireframe = that._wireframe;
                 materials.push(material);
@@ -261,13 +263,11 @@ LoaderMesh.prototype._createMaterialForEachPatch = function(){
 LoaderMesh.prototype._createShaderMaterialForEachPatch = function(){
         var that = this;
         var materials = []; 
-        var x = this._header.OffsetX, 
-            y = this._header.OffsetY, 
-            z = this._header.OffsetZ;
+        
         for(var i =0; i < this._header.patchesCount; i++){
                 var material = new B3DMaterial();
                 material.wireframe = that._wireframe;
-                material.uniforms.lightPosition.value.set(-x,y,z);
+                material.uniforms.lightPosition.value.copy(this._lightPos);
                 materials.push(material);
         }
         this._materials = new THREE.MultiMaterial(materials);

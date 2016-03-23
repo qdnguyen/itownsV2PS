@@ -60,12 +60,13 @@ MotreeProvider.prototype.genertateBati3DForTilePath = function(url,clipmap){
        }
 };
 
+//false means system referentiel does not in wgs84, e.g. iTowns
 MotreeProvider.prototype.init = function(url, clipmap){
         if(clipmap){
             this.genertateBati3DForTilePath(url,clipmap);
         }
         //var color = new THREE.Color().setHex( Math.random() * 0xffffff );
-         var color = 0xffcccc;
+         var color = 0x003399;
 
         if(this.tileSetPaths.length > 0){
             for(var i = 0 ; i < this.tileSetPaths.length; i++){
@@ -75,7 +76,8 @@ MotreeProvider.prototype.init = function(url, clipmap){
                           targetFps  :  25,
                           wireframe  : false,
                           color      : color,
-                          wgs84      : false //false means system referentiel does not in wgs84, e.g. iTowns
+                          wgs84      : false, 
+                          lightPos   : this._coSun
                     });
                     MotreeInstance.add(model); 
             }        
